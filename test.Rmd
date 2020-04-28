@@ -1,0 +1,275 @@
+---
+title: "Untitled"
+author: "Viren Patel"
+date: "4/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+library(rvest)
+library(choroplethr)
+library(choroplethrMaps)
+library(dplyr)
+library(stringr)
+library(gridExtra)
+
+library(here)
+library(tidyverse)
+library(kableExtra)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(httr)
+library(curl)
+library(jsonlite)
+library(printr)
+library(tidytext)
+library(wordcloud)
+library(reprex)
+
+library(tigris)
+library(dplyr)
+library(leaflet)
+usstates <- geojsonio::geojson_read("input_data/us-states.geo.json", what = "sp")
+states <- geojsonio::geojson_read("input_data/us-states.geo.json", what = "sp")
+cv_us_states = read.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv")
+```
+
+```{r viren}
+#head(df_pop_state)
+
+cv_us_states$date = as.Date(cv_us_states$date)
+
+
+
+
+usastates_plot = function(cv_us_states, usastates_plot_date) {
+  usastates_plot_date <- as.Date("2020-03-22")
+  cv_us_states_plot_df_new = subset(cv_us_states, date<=usastates_plot_date)
+  #cv_us_states_plot_df_new
+  
+  cv_us_states_aggregated = aggregate(cv_us_states_plot_df_new$cases, by=list(Category=cv_us_states_plot_df_new$state), FUN=sum)
+  names(cv_us_states_aggregated) = c("region", "value")
+  cv_us_states_aggregated <- cv_us_states_aggregated %>% 
+                              mutate(region = tolower(region), value = value) %>% 
+                              arrange(region)
+  
+  cv_us_states_aggregated
+  
+  #mydf <- df_pop_state
+  g <- state_choropleth(cv_us_states_aggregated, title="title", legend = "legend", num_colors = 1)
+  g
+}
+
+usastates_plot(cv_us_states, "2020-01-25")
+```
+
+```{r test}
+#head(states)
+cv_us_states
+
+?df_pop_state
+
+usastates_plot_date <- as.Date("2020-01-25")
+cv_us_states_plot_df_new = subset(cv_us_states, date<=usastates_plot_date)
+cv_us_states_plot_df_new
+
+cv_us_states_aggregated = aggregate(cv_us_states_plot_df_new$cases, by=list(Category=cv_us_states_plot_df_new$state), FUN=sum)
+names(cv_us_states_aggregated) = c("state", "cases")
+cv_us_states_aggregated
+
+bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+pal <- colorBin("YlOrRd", domain = cv_us_states_aggregated$cases, bins = bins)
+
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g people / mi<sup>2</sup>",
+  cv_us_states_aggregated$state, states$cases
+) %>% lapply(htmltools::HTML)
+
+
+
+```
+```{r test1}
+bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+pal <- colorBin("YlOrRd", domain = states$density, bins = bins)
+
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g people / mi<sup>2</sup>",
+  states$name, states$density
+) %>% lapply(htmltools::HTML)
+
+g1 <- leaflet(states) %>%
+  setView(-96, 37.8, 4) %>%
+  addProviderTiles("MapBox", options = providerTileOptions(
+    id = "mapbox.light",
+    accessToken = Sys.getenv('MAPBOX_ACCESS_TOKEN'))) %>%
+  addPolygons(
+    fillColor = ~pal(density),
+    weight = 2,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlight = highlightOptions(
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")) %>%
+  addLegend(pal = pal, values = ~density, opacity = 0.7, title = NULL,
+    position = "bottomright")
+g1
+
+
+```
+
+```{r state}
+library(maps)
+data(state)
+state.location <- data.frame ("state" = state.name,
+                              "Longitude" = state.center$x,
+                              "Latitude" = state.center$y,
+                              "abb" = state.abb
+                              )
+
+state.location
+
+usastates_plot_date <- as.Date("2020-01-25")
+cv_us_states_plot_df_new = subset(cv_us_states, date<=usastates_plot_date)
+cv_us_states_plot_df_new
+
+cv_us_states_aggregated = aggregate(cv_us_states_plot_df_new$cases, by=list(Category=cv_us_states_plot_df_new$state), FUN=sum)
+names(cv_us_states_aggregated) = c("state", "cases")
+cv_us_states_aggregated
+
+df <-  merge(cv_us_states_aggregated, state.location, by="state")
+df
+
+
+
+bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+pal <- colorBin("YlOrRd", domain = states$density, bins = bins)
+
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g people / mi<sup>2</sup>",
+  states$name, states$density
+) %>% lapply(htmltools::HTML)
+
+
+
+
+g1 <- leaflet(states) %>%
+  setView(-96, 37.8, 4) %>%
+  addProviderTiles("MapBox", options = providerTileOptions(
+    id = "mapbox.light",
+    accessToken = Sys.getenv('MAPBOX_ACCESS_TOKEN'))) %>%
+  addPolygons(
+    fillColor = ~pal(density),
+    weight = 2,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlight = highlightOptions(
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")) %>%
+  addLegend(pal = pal, values = ~density, opacity = 0.7, title = NULL,
+    position = "bottomright")
+g1
+
+
+
+
+
+
+
+
+cv_us_states_aggregated %>% leaflet() %>% addTiles() 
+
+```
+
+```{r mymap}
+library(maps)
+data(state)
+state %>% 
+  leaflet() %>% 
+  addTiles() %>% 
+  addPolygons(popup=~NAME)
+```
+
+```{r test5}
+cv_us_states
+
+cv_us_states$date = as.Date(cv_us_states$date,"%Y-%m-%d")
+cv_us_states
+usastates_plot_date <- as.Date("2020-03-25")
+cv_us_states_plot_df_new = subset(cv_us_states, date<=usastates_plot_date)
+cv_us_states_plot_df_new
+
+cv_us_states_aggregated = aggregate(cv_us_states_plot_df_new$cases, by=list(Category=cv_us_states_plot_df_new$state), FUN=sum)
+names(cv_us_states_aggregated) = c("state", "cases")
+cv_us_states_aggregated
+
+states$cases <- 0
+
+bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+pal <- colorBin("Blues", domain = states$cases, bins = bins)
+
+for (i in 1:length(states$name)) { 
+  # d <- cv_us_states_aggregated %>% filter(states$name[i] == cv_us_states_aggregated$state) %>% select(cases)
+  states$cases[i] = as.integer(cv_us_states_aggregated %>% filter(states$name[i] == cv_us_states_aggregated$state) %>% select(cases))
+}
+states$cases[is.na(states$cases)] <- 0;
+
+#states$cases %>% replace_na(0)
+
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g people",
+  states$name, states$cases
+) %>% lapply(htmltools::HTML)
+
+g1 <- leaflet(states) %>%
+  setView(-96, 37.8, 4) %>%
+  addProviderTiles("MapBox", options = providerTileOptions(
+    id = "mapbox.light",
+    accessToken = Sys.getenv('MAPBOX_ACCESS_TOKEN'))) %>%
+  addPolygons(
+    fillColor = ~pal(cases),
+    weight = 2,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlight = highlightOptions(
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")) %>%
+  addLegend(pal = pal, values = ~cases, opacity = 0.7, title = NULL,
+    position = "bottomright")
+g1
+
+```
