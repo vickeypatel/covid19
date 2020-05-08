@@ -26,6 +26,7 @@ if(!require(shiny)) install.packages("shiny", repos = "http://cran.us.r-project.
 if(!require(shinyWidgets)) install.packages("shinyWidgets", repos = "http://cran.us.r-project.org")
 if(!require(shinydashboard)) install.packages("shinydashboard", repos = "http://cran.us.r-project.org")
 if(!require(shinythemes)) install.packages("shinythemes", repos = "http://cran.us.r-project.org")
+if(!require(choroplethr)) install.packages("choroplethr", repos = "http://cran.us.r-project.org")
 ```
 
 ```{r importdata, echo=FALSE}
